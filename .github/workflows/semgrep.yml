@@ -47,3 +47,22 @@ jobs:
         run: |
           unzip -o archive.zip
           semgrep ci
+          tags=$(curl -s -H "Accept: application/vnd.github.mercy-preview+json" \
+               -H "Authorization: token $GH_ACCESS_TOKEN" \
+               "https://api.github.com/repos/$GITHUB_REPOSITORY/topics" | jq '.names')
+          
+          echo $tags
+          
+          DEPLOYMENT_SLUG=$(curl -s \
+               -H "Authorization: Bearer $SEMGREP_API_TOKEN" \
+               -H "Content-Type: application/json" \
+               "https://semgrep.dev/api/v1/deployments" | jq -r '.deployments[0].slug')
+          
+          echo $DEPLOYMENT_SLUG
+          
+          curl -X PUT \
+               -H "Authorization: Bearer $SEMGREP_API_TOKEN" \
+               -H "Content-Type: application/json" \
+               -d "{\"tags\": $tags}" \
+               "https://semgrep.dev/api/v1/deployments/$DEPLOYMENT_SLUG/projects/$GITHUB_REPOSITORY/tags"
+
